@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BinPulse — Segregation Dustbin IoT</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗑️</text></svg>">
+<script src="https://unpkg.com/mqtt@5/dist/mqtt.min.js"></script>
+<script>if (typeof mqtt === 'undefined') document.write('<script src="https://cdn.jsdelivr.net/npm/mqtt@5/dist/mqtt.min.js"><\/script>');</script>
+<style>
+  :root{
+    --bg:#0b1120; --card:#0f172a; --card2:#111c33; --line:#1e293b;
+    --txt:#e2e8f0; --mut:#94a3b8; --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; --acc:#38bdf8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:radial-gradient(1200px 600px at 80% -10%, #16223f 0%, var(--bg) 55%);color:var(--txt);
+       font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;min-height:100vh}
+  header{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+         padding:14px 20px;background:rgba(11,17,32,.82);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .logo{font-size:20px;font-weight:700;letter-spacing:.3px;display:flex;align-items:center;gap:8px}
+  .logo .sub{font-size:11px;color:var(--mut);font-weight:500;display:block}
+  .pill{font-size:12px;padding:5px 12px;border-radius:999px;border:1px solid var(--line);color:var(--mut);
+        display:inline-flex;align-items:center;gap:6px;background:var(--card)}
+  .pill.ok{color:var(--ok);border-color:#14532d} .pill.warn{color:var(--warn);border-color:#78350f}
+  .pill.bad{color:var(--bad);border-color:#7f1d1d}
+  .dot{width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor}
+  .spacer{flex:1}
+  button{cursor:pointer;font-family:inherit}
+  .btn{font-size:13px;padding:8px 14px;border-radius:10px;border:1px solid var(--line);color:var(--txt);
+       background:var(--card2);transition:.15s}
+  .btn:hover{border-color:var(--acc);color:var(--acc)}
+  .btn.primary{background:linear-gradient(135deg,#0ea5e9,#2563eb);border:none;color:#fff;font-weight:600}
+  .btn.primary:hover{filter:brightness(1.1)}
+  #demoBadge{background:#78350f;color:#fbbf24;font-weight:700;animation:pulse 1.6s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+  main{max-width:1100px;margin:0 auto;padding:26px 18px 60px}
+  .summary{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 16px;font-size:13px;color:var(--mut)}
+  .stat b{color:var(--txt);font-size:16px;margin-right:4px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+  .card{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:18px;
+        padding:20px;display:flex;gap:16px;align-items:center;transition:.25s}
+  .card.full{border-color:var(--bad);box-shadow:0 0 24px rgba(239,68,68,.25);animation:pulse 2s infinite}
+  .donut{position:relative;width:104px;height:104px;border-radius:50%;flex:none;display:grid;place-items:center;
+         background:conic-gradient(var(--dc) calc(var(--p)*1%), #1b2540 0)}
+  .donut .hole{width:74px;height:74px;border-radius:50%;background:var(--card);display:grid;place-items:center}
+  .pct{font-size:22px;font-weight:700}.pct i{font-style:normal;font-size:12px;color:var(--mut)}
+  .meta{flex:1;min-width:0}
+  .meta h3{font-size:16px;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chip{font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;letter-spacing:.5px}
+  .chip.ok{background:#052e16;color:var(--ok)} .chip.near{background:#451a03;color:var(--warn)} .chip.full{background:#450a0a;color:var(--bad)}
+  .spark{width:100%;height:30px;margin-top:10px;display:block}
+  .empty{grid-column:1/-1;text-align:center;color:var(--mut);padding:60px 20px;border:1px dashed var(--line);border-radius:18px}
+  section{max-width:1100px;margin:0 auto;padding:0 18px 50px}
+  h2{font-size:16px;margin-bottom:12px;color:var(--mut);font-weight:600;letter-spacing:.4px}
+  .log{background:var(--card);border:1px solid var(--line);border-radius:14px;max-height:260px;overflow-y:auto}
+  .log-row{display:flex;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:13px;align-items:center}
+  .log-row:last-child{border-bottom:none}
+  .log-row .t{color:var(--mut);font-variant-numeric:tabular-nums;flex:none;width:130px}
+  .log-row .tag{color:var(--bad);font-weight:700}
+  #toasts{position:fixed;top:70px;right:16px;z-index:100;display:flex;flex-direction:column;gap:10px;max-width:340px}
+  .toast{background:#1e293b;border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:12px;
+         padding:12px 16px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.4);animation:slide .25s}
+  .toast.alert{border-left-color:var(--bad);background:#2a1215}
+  .toast.ok{border-left-color:var(--ok)}
+  .toast.out{opacity:0;transform:translateX(20px);transition:.4s}
+  @keyframes slide{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+  .modal-bg{position:fixed;inset:0;background:rgba(2,6,23,.7);backdrop-filter:blur(4px);z-index:50;
+            display:none;align-items:center;justify-content:center;padding:16px}
+  .modal-bg.open{display:flex}
+  .modal{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px;width:100%;max-width:440px}
+  .modal h3{margin-bottom:16px}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:12px;color:var(--mut);margin-bottom:6px}
+  .field input[type=text],.field input[type=number]{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);
+        background:var(--bg);color:var(--txt);font-family:inherit;font-size:14px}
+  .field input:focus{outline:none;border-color:var(--acc)}
+  .check{display:flex;align-items:center;gap:8px;font-size:14px}
+  .modal .row{display:flex;gap:10px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap}
+  .hidden{display:none!important}
+  footer{max-width:1100px;margin:0 auto;padding:0 18px 30px;color:var(--mut);font-size:12px;text-align:center}
+  @media (max-width:520px){ header{padding:10px 12px} .logo{font-size:17px} main{padding:16px 12px 40px} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🗑️ BinPulse
+    <span class="sub">Segregation Dustbin · ESP32</span>
+  </div>
+  <span class="pill" id="pillBroker"><span class="dot"></span><span id="pillBrokerTxt">Idle</span></span>
+  <span class="pill" id="pillDevice"><span class="dot"></span><span id="pillDeviceTxt">No device data</span></span>
+  <span class="pill bad hidden" id="fullBadge"></span>
+  <span class="pill warn hidden" id="demoBadge">⚡ DEMO MODE — simulated data</span>
+  <div class="spacer"></div>
+  <button class="btn hidden" id="btnNotify">🔔 Enable notifications</button>
+  <button class="btn" id="btnDemo">▶ Demo</button>
+  <button class="btn" id="btnPing">↻ Ping device</button>
+  <button class="btn" id="btnSettings">⚙ Settings</button>
+</header>
+
+<main>
+  <div class="summary">
+    <div class="stat">Bins<b id="statBins">0</b></div>
+    <div class="stat">Full<b id="statFull">0</b></div>
+    <div class="stat">Alert threshold<b id="statThr">80%</b></div>
+    <div class="stat">Updated<b id="statUpdated">—</b></div>
+  </div>
+  <div class="grid" id="grid"></div>
+</main>
+
+<section>
+  <h2>ALERT HISTORY</h2>
+  <div class="log" id="log"></div>
+</section>
+
+<footer>
+  BinPulse · MQTT topics: <code>dustbin/&lt;device-id&gt;/state</code> · <code>/status</code> · <code>/cmd</code> ·
+  Notifications arrive while this page is open (keep it in a tab, or add to Home Screen).
+</footer>
+
+<div id="toasts"></div>
+
+<div class="modal-bg" id="settingsModal">
+  <div class="modal">
+    <h3>⚙ Settings</h3>
+    <div class="field"><label>MQTT broker (WebSocket URL)</label>
+      <input type="text" id="sUrl" placeholder="wss://broker.emqx.io:8084/mqtt"></div>
+    <div class="field"><label>Device ID (must match ESP32 DEVICE_ID)</label>
+      <input type="text" id="sDev" placeholder="bin01"></div>
+    <div class="field"><label>Alert threshold (% full)</label>
+      <input type="number" id="sThr" min="10" max="100"></div>
+    <div class="field"><label>Re-arm drop (%, prevents repeat alerts)</label>
+      <input type="number" id="sHys" min="0" max="50"></div>
+    <div class="field check"><input type="checkbox" id="sSound"> <label for="sSound" style="margin:0;color:var(--txt)">Play alert sound</label></div>
+    <div class="row">
+      <button class="btn" id="btnTestNotify">🔔 Test notification</button>
+      <button class="btn" id="btnCancel">Cancel</button>
+      <button class="btn primary" id="btnSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+
+const DEFAULT_CFG = { url:'wss://broker.emqx.io:8084/mqtt', deviceId:'bin01', threshold:80, hysteresis:10, sound:true };
+let cfg = { ...DEFAULT_CFG, ...JSON.parse(localStorage.getItem('binpulse_cfg') || '{}') };
+
+const FRIENDLY = {
+  wet:['Wet Waste','#22c55e'], organic:['Organic','#22c55e'],
+  dry:['Dry Waste','#38bdf8'], plastic:['Plastic','#38bdf8'], paper:['Paper','#38bdf8'],
+  metal:['Metal','#f59e0b'], glass:['Glass','#34d399'], ewaste:['E-Waste','#f472b6']
+};
+const PALETTE = ['#22c55e','#38bdf8','#f59e0b','#a78bfa','#f472b6','#34d399','#fbbf24','#60a5fa'];
+function binInfo(k, i){
+  return FRIENDLY[k] ? {name:FRIENDLY[k][0], color:FRIENDLY[k][1]}
+                     : {name:k.charAt(0).toUpperCase()+k.slice(1), color:PALETTE[i % PALETTE.length]};
+}
+
+const bins = {};                 // key -> {pct, hist[], alerted}
+let client = null, demoTimer = null, demo = false;
+let deviceOnline = null, lastStateAt = null;
+let alertLog = JSON.parse(localStorage.getItem('binpulse_log') || '[]');
+
+const topicBase = () => 'dustbin/' + cfg.deviceId;
+
+function setPill(id, txt, cls){
+  const p = $(id); p.className = 'pill' + (cls ? ' ' + cls : '');
+  $(id + 'Txt').textContent = txt;
+}
+
+/* ---------------- state handling ---------------- */
+function applyState(obj){
+  lastStateAt = Date.now();
+  for (const [k, v] of Object.entries(obj)){
+    if (typeof v !== 'number' || !isFinite(v)) continue;
+    if (!bins[k]) bins[k] = { pct:0, hist:[], alerted:false };
+    const b = bins[k];
+    b.pct = Math.max(0, Math.min(100, Math.round(v)));
+    b.hist.push(b.pct); if (b.hist.length > 60) b.hist.shift();
+    checkAlert(k, b.pct);
+  }
+  renderBins(); renderSummary();
+}
+
+function checkAlert(k, pct){
+  const b = bins[k];
+  if (pct >= cfg.threshold && !b.alerted){ b.alerted = true; raiseAlert(k, pct); }
+  else if (pct <= cfg.threshold - cfg.hysteresis){ b.alerted = false; }
+}
+
+function statusOf(pct){
+  if (pct >= cfg.threshold) return {txt:'FULL',  cls:'full', color:'#ef4444'};
+  if (pct >= cfg.threshold - 20) return {txt:'NEARLY FULL', cls:'near', color:'#f59e0b'};
+  return {txt:'OK', cls:'ok', color:'#22c55e'};
+}
+
+/* ---------------- alerts & notifications ---------------- */
+function raiseAlert(k, pct){
+  const info = binInfo(k, Object.keys(bins).indexOf(k));
+  const body = `${info.name} bin is ${pct}% full — please empty it.`;
+  if ('Notification' in window && Notification.permission === 'granted'){
+    new Notification('🗑️ Bin FULL!', { body, tag:'bin-' + k });
+  }
+  toast(`🚨 <b>${info.name}</b> bin is <b>${pct}%</b> full — empty it!`, 'alert');
+  beep();
+  alertLog.unshift({ t:Date.now(), bin:info.name, pct });
+  alertLog = alertLog.slice(0, 50);
+  localStorage.setItem('binpulse_log', JSON.stringify(alertLog));
+  renderLog();
+}
+
+function renderLog(){
+  const el = $('#log');
+  if (!alertLog.length){ el.innerHTML = '<div class="log-row" style="color:var(--mut)">No alerts yet. Bins look happy 🙂</div>'; return; }
+  el.innerHTML = alertLog.map(a =>
+    `<div class="log-row"><span class="t">${new Date(a.t).toLocaleString()}</span>
+     <span class="tag">FULL</span> ${a.bin} bin — ${a.pct}%</div>`).join('');
+}
+
+let actx;
+function beep(){
+  if (!cfg.sound) return;
+  try{
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = 'sine'; o.frequency.value = 880; g.gain.value = 0.12;
+    o.connect(g); g.connect(actx.destination);
+    o.start();
+    setTimeout(() => o.frequency.value = 660, 180);
+    setTimeout(() => { o.stop(); g.gain.setTargetAtTime(0, actx.currentTime, 0.05); }, 420);
+  }catch(e){}
+}
+
+function toast(html, kind){
+  const d = document.createElement('div');
+  d.className = 'toast ' + (kind || '');
+  d.innerHTML = html;
+  $('#toasts').appendChild(d);
+  setTimeout(() => { d.classList.add('out'); setTimeout(() => d.remove(), 450); }, 6000);
+}
+
+/* ---------------- rendering ---------------- */
+function spark(hist, color){
+  if (hist.length < 2) return '';
+  const pts = hist.map((v, i) =>
+    `${(i / (hist.length - 1) * 100).toFixed(1)},${(26 - v / 100 * 24).toFixed(1)}`).join(' ');
+  return `<svg class="spark" viewBox="0 0 100 28" preserveAspectRatio="none">
+    <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round" opacity=".85"/></svg>`;
+}
+
+function renderBins(){
+  const keys = Object.keys(bins);
+  if (!keys.length){
+    $('#grid').innerHTML = `<div class="empty">
+      <div style="font-size:34px;margin-bottom:10px">📡</div>
+      Waiting for data from device <b>${cfg.deviceId}</b> on <code style="font-size:12px">${cfg.url}</code><br><br>
+      Press <b>▶ Demo</b> to try the app with simulated bins, or flash the ESP32 sketch and power it on.
+    </div>`;
+    return;
+  }
+  $('#grid').innerHTML = keys.map((k, i) => {
+    const b = bins[k], info = binInfo(k, i), st = statusOf(b.pct);
+    return `<div class="card ${b.pct >= cfg.threshold ? 'full' : ''}">
+      <div class="donut" style="--p:${b.pct};--dc:${st.color}">
+        <div class="hole"><span class="pct" style="color:${st.color}">${b.pct}<i>%</i></span></div>
+      </div>
+      <div class="meta">
+        <h3><span style="color:${info.color}">●</span> ${info.name}</h3>
+        <span class="chip ${st.cls}">${st.txt}</span>
+        ${spark(b.hist, st.color)}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function rel(ts){
+  if (!ts) return null;
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 10) return 'just now';
+  if (s < 60) return s + 's ago';
+  if (s < 3600) return Math.floor(s / 60) + 'm ago';
+  return Math.floor(s / 3600) + 'h ago';
+}
+
+function renderSummary(){
+  const keys = Object.keys(bins);
+  const full = keys.filter(k => bins[k].pct >= cfg.threshold).length;
+  $('#statBins').textContent = keys.length;
+  $('#statFull').textContent = full;
+  $('#statThr').textContent = cfg.threshold + '%';
+  $('#statUpdated').textContent = rel(lastStateAt) || '—';
+  const badge = $('#fullBadge');
+  if (full > 0){ badge.classList.remove('hidden'); badge.textContent = `🚨 ${full} BIN${full > 1 ? 'S' : ''} FULL`; }
+  else badge.classList.add('hidden');
+  setPill('#pillDevice', demo ? 'Demo device' : (deviceOnline === null ? 'No device data' : (deviceOnline ? 'Device online' : 'Device offline')),
+          deviceOnline === true || demo ? 'ok' : (deviceOnline === false ? 'bad' : ''));
+}
+
+/* ---------------- MQTT ---------------- */
+function connect(){
+  if (typeof mqtt === 'undefined'){ setPill('#pillBroker','MQTT lib failed — check internet','bad'); return; }
+  disconnect();
+  setPill('#pillBroker','Connecting…','warn');
+  client = mqtt.connect(cfg.url, {
+    clientId: 'binpulse-' + Math.random().toString(16).slice(2, 8),
+    reconnectPeriod: 4000, connectTimeout: 8000, clean: true
+  });
+  client.on('connect', () => {
+    setPill('#pillBroker','Broker connected','ok');
+    client.subscribe([topicBase() + '/state', topicBase() + '/status']);
+  });
+  client.on('message', (t, payload) => {
+    const msg = payload.toString();
+    if (t.endsWith('/status')){ deviceOnline = (msg === 'online'); renderSummary(); }
+    else if (t.endsWith('/state')){ try { applyState(JSON.parse(msg)); } catch(e){} }
+  });
+  client.on('error',   () => setPill('#pillBroker','Broker error','bad'));
+  client.on('close',   () => { if (!demo) setPill('#pillBroker','Disconnected','warn'); });
+  client.on('reconnect',() => { if (!demo) setPill('#pillBroker','Reconnecting…','warn'); });
+}
+
+function disconnect(){ if (client){ try { client.end(true); } catch(e){} client = null; } }
+
+/* ---------------- demo mode ---------------- */
+function startDemo(){
+  stopDemo(false);
+  demo = true;
+  $('#demoBadge').classList.remove('hidden');
+  $('#btnDemo').textContent = '■ Stop demo';
+  deviceOnline = true;
+  const lv = () => 5 + Math.random() * 25;
+  const sim = { wet: lv(), dry: lv(), metal: lv() };
+  const tick = () => {
+    for (const k of Object.keys(sim)){
+      sim[k] += 1 + Math.random() * 3.5;
+      if (sim[k] > 96 && Math.random() < 0.3) sim[k] = 5 + Math.random() * 15; // bin got emptied
+      sim[k] = Math.min(100, sim[k]);
+    }
+    applyState({ ...sim });
+  };
+  tick();
+  demoTimer = setInterval(tick, 2000);
+  setPill('#pillBroker','DEMO MODE','warn');
+  renderSummary();
+}
+
+function stopDemo(reconnect = true){
+  demo = false;
+  clearInterval(demoTimer); demoTimer = null;
+  $('#demoBadge').classList.add('hidden');
+  $('#btnDemo').textContent = '▶ Demo';
+  if (reconnect) connect();
+}
+
+/* ---------------- UI wiring ---------------- */
+function applyCfgToInputs(){
+  $('#sUrl').value = cfg.url; $('#sDev').value = cfg.deviceId;
+  $('#sThr').value = cfg.threshold; $('#sHys').value = cfg.hysteresis;
+  $('#sSound').checked = cfg.sound;
+}
+
+$('#btnDemo').onclick = () => demo ? stopDemo() : startDemo();
+
+$('#btnPing').onclick = () => {
+  if (demo){ toast('Demo mode — no real device. Stop demo first.'); return; }
+  if (client && client.connected){ client.publish(topicBase() + '/cmd', 'ping'); toast('Ping sent — device should reply within seconds.'); }
+  else toast('Not connected to broker.');
+};
+
+$('#btnSettings').onclick = () => { applyCfgToInputs(); $('#settingsModal').classList.add('open'); };
+$('#btnCancel').onclick = () => $('#settingsModal').classList.remove('open');
+$('#settingsModal').onclick = e => { if (e.target.id === 'settingsModal') $('#settingsModal').classList.remove('open'); };
+
+$('#btnSave').onclick = () => {
+  cfg.url = $('#sUrl').value.trim() || DEFAULT_CFG.url;
+  cfg.deviceId = $('#sDev').value.trim() || DEFAULT_CFG.deviceId;
+  cfg.threshold = Math.min(100, Math.max(10, parseInt($('#sThr').value) || 80));
+  cfg.hysteresis = Math.min(50, Math.max(0, parseInt($('#sHys').value) || 0));
+  cfg.sound = $('#sSound').checked;
+  localStorage.setItem('binpulse_cfg', JSON.stringify(cfg));
+  $('#settingsModal').classList.remove('open');
+  if (!demo) connect();
+  toast('Settings saved ✓', 'ok');
+};
+
+$('#btnTestNotify').onclick = async () => {
+  if ('Notification' in window && Notification.permission !== 'granted'){
+    const p = await Notification.requestPermission();
+    if (p !== 'granted'){ toast('Notification permission denied — in-app alerts still work.', 'alert'); return; }
+    $('#btnNotify').classList.add('hidden');
+  }
+  if ('Notification' in window && Notification.permission === 'granted')
+    new Notification('🗑️ Test alert', { body: 'If you can read this, notifications work! 🎉' });
+  toast('🔔 Test alert — notifications work!', 'ok');
+  beep();
+};
+
+$('#btnNotify').onclick = async () => {
+  if (!('Notification' in window)){ toast('This browser does not support notifications.', 'alert'); return; }
+  const p = await Notification.requestPermission();
+  if (p === 'granted'){ $('#btnNotify').classList.add('hidden'); toast('Notifications enabled ✓', 'ok'); }
+  else toast('Permission denied — in-app alerts still work.', 'alert');
+};
+
+/* ---------------- init ---------------- */
+renderLog();
+renderBins();
+renderSummary();
+if ('Notification' in window && Notification.permission !== 'granted')
+  $('#btnNotify').classList.remove('hidden');
+
+setInterval(renderSummary, 5000);
+
+const qp = new URLSearchParams(location.search);
+if (qp.get('demo') === '1') startDemo();
+else connect();
+</script>
+</body>
+</html>
