@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BinPulse — Segregation Dustbin IoT</title>
-<!-- v1.5: two bins (wet + dry) -->
+<!-- v1.6: smooth animated gauges, flicker-free updates, faster connect, battery-friendly demo -->
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#0b1120">
@@ -12,6 +12,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="BinPulse">
+<link rel="dns-prefetch" href="broker.emqx.io">
+<link rel="preconnect" href="broker.emqx.io" crossorigin>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗑️</text></svg>">
 <script src="https://unpkg.com/mqtt@5/dist/mqtt.min.js"></script>
 <script>if (typeof mqtt === 'undefined') document.write('<script src="https://cdn.jsdelivr.net/npm/mqtt@5/dist/mqtt.min.js"><\/script>');</script>
@@ -20,6 +22,8 @@
     --bg:#0b1120; --card:#0f172a; --card2:#111c33; --line:#1e293b;
     --txt:#e2e8f0; --mut:#94a3b8; --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; --acc:#38bdf8;
   }
+  @property --p{syntax:'<number>';inherits:false;initial-value:0}
+  @property --dc{syntax:'<color>';inherits:false;initial-value:#22c55e}
   *{box-sizing:border-box;margin:0;padding:0}
   body{background:radial-gradient(1200px 600px at 80% -10%, #16223f 0%, var(--bg) 55%);color:var(--txt);
        font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;min-height:100vh}
@@ -47,15 +51,19 @@
   .stat b{color:var(--txt);font-size:16px;margin-right:4px}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
   .card{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:18px;
-        padding:20px;display:flex;gap:16px;align-items:center;transition:.25s}
+        padding:20px;display:flex;gap:16px;align-items:center;transition:.25s;
+        animation:pop .45s cubic-bezier(.22,1,.36,1) both}
+  @keyframes pop{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
   .card.full{border-color:var(--bad);box-shadow:0 0 24px rgba(239,68,68,.25);animation:pulse 2s infinite}
   .donut{position:relative;width:104px;height:104px;border-radius:50%;flex:none;display:grid;place-items:center;
-         background:conic-gradient(var(--dc) calc(var(--p)*1%), #1b2540 0)}
+         background:conic-gradient(var(--dc) calc(var(--p)*1%), #1b2540 0);
+         transition:--p .9s cubic-bezier(.22,1,.36,1), --dc .6s ease}
   .donut .hole{width:74px;height:74px;border-radius:50%;background:var(--card);display:grid;place-items:center}
   .pct{font-size:22px;font-weight:700}.pct i{font-style:normal;font-size:12px;color:var(--mut)}
   .meta{flex:1;min-width:0}
   .meta h3{font-size:16px;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .chip{font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;letter-spacing:.5px}
+  .chip{font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;letter-spacing:.5px;
+        transition:background-color .4s,color .4s}
   .chip.ok{background:#052e16;color:var(--ok)} .chip.near{background:#451a03;color:var(--warn)} .chip.full{background:#450a0a;color:var(--bad)}
   .spark{width:100%;height:30px;margin-top:10px;display:block}
   .empty{grid-column:1/-1;text-align:center;color:var(--mut);padding:60px 20px;border:1px dashed var(--line);border-radius:18px}
@@ -209,7 +217,7 @@ function binInfo(k, i){
 }
 
 const bins = {};                 // key -> {pct, hist[], alerted}
-let client = null, demoTimer = null, demo = false;
+let client = null, demoTimer = null, demo = false, demoTickRef = null;
 let deviceOnline = null, lastStateAt = null, demoForced = false;
 let alertLog = JSON.parse(localStorage.getItem('binpulse_log') || '[]');
 
@@ -231,7 +239,7 @@ function applyState(obj){
     b.hist.push(b.pct); if (b.hist.length > 60) b.hist.shift();
     checkAlert(k, b.pct);
   }
-  renderBins(); renderSummary();
+  scheduleRender();
 }
 
 function checkAlert(k, pct){
@@ -292,6 +300,12 @@ function toast(html, kind){
 }
 
 /* ---------------- rendering ---------------- */
+let rafPending = false;
+function scheduleRender(){
+  if (rafPending) return;
+  rafPending = true;
+  requestAnimationFrame(() => { rafPending = false; renderBins(); renderSummary(); });
+}
 function spark(hist, color){
   if (hist.length < 2) return '';
   const pts = hist.map((v, i) =>
@@ -301,20 +315,9 @@ function spark(hist, color){
       stroke-linecap="round" stroke-linejoin="round" opacity=".85"/></svg>`;
 }
 
-function renderBins(){
-  const keys = Object.keys(bins);
-  if (!keys.length){
-    $('#grid').innerHTML = `<div class="empty">
-      <div style="font-size:34px;margin-bottom:10px">📡</div>
-      Waiting for data from device <b>${cfg.deviceId}</b> on <code style="font-size:12px">${cfg.url}</code><br><br>
-      Press <b>▶ Demo</b> to try the app with simulated bins, or flash the ESP32 sketch and power it on.<br>
-      Full steps: <b>📖 Guide</b> button (top right).
-    </div>`;
-    return;
-  }
-  $('#grid').innerHTML = keys.map((k, i) => {
-    const b = bins[k], info = binInfo(k, i), st = statusOf(b.pct);
-    return `<div class="card ${b.pct >= cfg.threshold ? 'full' : ''}">
+function cardHTML(k, i){
+  const b = bins[k], info = binInfo(k, i), st = statusOf(b.pct);
+  return `<div class="card" style="animation-delay:${i * 70}ms">
       <div class="donut" style="--p:${b.pct};--dc:${st.color}">
         <div class="hole"><span class="pct" style="color:${st.color}">${b.pct}<i>%</i></span></div>
       </div>
@@ -324,7 +327,44 @@ function renderBins(){
         ${spark(b.hist, st.color)}
       </div>
     </div>`;
-  }).join('');
+}
+
+let gridKeys = '';
+function renderBins(){
+  const keys = Object.keys(bins), grid = $('#grid');
+  if (!keys.length){
+    gridKeys = '';
+    grid.innerHTML = `<div class="empty">
+      <div style="font-size:34px;margin-bottom:10px">📡</div>
+      Waiting for data from device <b>${cfg.deviceId}</b> on <code style="font-size:12px">${cfg.url}</code><br><br>
+      Press <b>▶ Demo</b> to try the app with simulated bins, or flash the ESP32 sketch and power it on.<br>
+      Full steps: <b>📖 Guide</b> button (top right).
+    </div>`;
+    return;
+  }
+  const sig = keys.join(',');
+  if (sig !== gridKeys){                       // bin set changed → rebuild (replays entrance animation)
+    gridKeys = sig;
+    grid.innerHTML = keys.map(cardHTML).join('');
+    return;
+  }
+  keys.forEach((k, i) => {                     // same bins → patch in place, no flicker
+    const card = grid.children[i]; if (!card) return;
+    const b = bins[k], st = statusOf(b.pct);
+    card.classList.toggle('full', b.pct >= cfg.threshold);
+    const donut = card.querySelector('.donut');
+    donut.style.setProperty('--p', b.pct);     // arc animates via CSS transition
+    donut.style.setProperty('--dc', st.color);
+    const pctEl = card.querySelector('.pct');
+    pctEl.style.color = st.color;
+    pctEl.innerHTML = b.pct + '<i>%</i>';
+    const chip = card.querySelector('.chip');
+    chip.className = 'chip ' + st.cls;
+    chip.textContent = st.txt;
+    const meta = card.querySelector('.meta'), old = card.querySelector('.spark');
+    if (old) old.remove();
+    meta.insertAdjacentHTML('beforeend', spark(b.hist, st.color));
+  });
 }
 
 function rel(ts){
@@ -401,6 +441,7 @@ function startDemo(){
     applyState({ ...sim });
   };
   tick();
+  demoTickRef = tick;
   demoTimer = setInterval(tick, 2000);
   setPill('#pillBroker','DEMO MODE','warn');
   renderSummary();
@@ -408,7 +449,7 @@ function startDemo(){
 
 function stopDemo(reconnect = true){
   demo = false;
-  clearInterval(demoTimer); demoTimer = null;
+  clearInterval(demoTimer); demoTimer = null; demoTickRef = null;
   $('#demoBadge').classList.add('hidden');
   $('#btnDemo').textContent = '▶ Demo';
   if (reconnect) connect();
@@ -476,6 +517,16 @@ if ('Notification' in window && Notification.permission !== 'granted')
   $('#btnNotify').classList.remove('hidden');
 
 setInterval(renderSummary, 5000);
+
+// pause the simulation while the tab is hidden (saves battery), resume on return
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden){
+    if (demoTimer){ clearInterval(demoTimer); demoTimer = null; }
+  } else if (demo && demoTickRef && !demoTimer){
+    demoTickRef();
+    demoTimer = setInterval(demoTickRef, 2000);
+  }
+});
 
 const qp = new URLSearchParams(location.search);
 connect();
