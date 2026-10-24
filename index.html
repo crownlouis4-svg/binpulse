@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BinPulse — Segregation Dustbin IoT</title>
-<!-- v1.3: in-app setup guide (ESP32 + notifications) -->
+<!-- v1.4: in-app setup guide (ESP32 + notifications) + click-through toasts -->
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#0b1120">
@@ -66,7 +66,7 @@
   .log-row:last-child{border-bottom:none}
   .log-row .t{color:var(--mut);font-variant-numeric:tabular-nums;flex:none;width:130px}
   .log-row .tag{color:var(--bad);font-weight:700}
-  #toasts{position:fixed;top:70px;right:16px;z-index:100;display:flex;flex-direction:column;gap:10px;max-width:340px}
+  #toasts{position:fixed;top:70px;right:16px;z-index:100;display:flex;flex-direction:column;gap:10px;max-width:340px;pointer-events:none}
   .toast{background:#1e293b;border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:12px;
          padding:12px 16px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.4);animation:slide .25s}
   .toast.alert{border-left-color:var(--bad);background:#2a1215}
