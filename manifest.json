@@ -1,0 +1,15 @@
+{
+  "name": "BinPulse — Segregation Dustbin IoT",
+  "short_name": "BinPulse",
+  "description": "Live fill levels and full-bin alerts for your ESP32 segregation dustbin",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0b1120",
+  "theme_color": "#0b1120",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

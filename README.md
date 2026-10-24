@@ -27,7 +27,8 @@ ESP32 + HC-SR04 sensors ──MQTT──▶ broker.emqx.io ──MQTT-over-WebSo
 - **Better (real URL for your phone):** drag the `binpulse` folder onto
   [Netlify Drop](https://app.netlify.com/drop) → you get a free `https://...` link in seconds.
   (Also works: GitHub Pages, Vercel, Cloudflare Pages.)
-- On your phone open the link, tap **🔔 Enable notifications**, then **Add to Home Screen**.
+- On your phone open the link, tap **🔔 Enable notifications**, then **Add to Home Screen** —
+  it installs like a real app (own icon, fullscreen) and notifications work from there.
 
 Press **▶ Demo** any time to see the app with simulated bins (great for testing/demo day).
 If no ESP32 is online when you open the app, it automatically switches to clearly-labeled

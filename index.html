@@ -4,7 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BinPulse — Segregation Dustbin IoT</title>
-<!-- v1.1: auto-standby simulation + automatic live takeover -->
+<!-- v1.2: PWA install support for phone notifications -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0b1120">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BinPulse">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗑️</text></svg>">
 <script src="https://unpkg.com/mqtt@5/dist/mqtt.min.js"></script>
 <script>if (typeof mqtt === 'undefined') document.write('<script src="https://cdn.jsdelivr.net/npm/mqtt@5/dist/mqtt.min.js"><\/script>');</script>
