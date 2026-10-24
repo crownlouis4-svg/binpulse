@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BinPulse — Segregation Dustbin IoT</title>
+<!-- v1.1: auto-standby simulation + automatic live takeover -->
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗑️</text></svg>">
 <script src="https://unpkg.com/mqtt@5/dist/mqtt.min.js"></script>
 <script>if (typeof mqtt === 'undefined') document.write('<script src="https://cdn.jsdelivr.net/npm/mqtt@5/dist/mqtt.min.js"><\/script>');</script>
@@ -161,7 +162,7 @@ function binInfo(k, i){
 
 const bins = {};                 // key -> {pct, hist[], alerted}
 let client = null, demoTimer = null, demo = false;
-let deviceOnline = null, lastStateAt = null;
+let deviceOnline = null, lastStateAt = null, demoForced = false;
 let alertLog = JSON.parse(localStorage.getItem('binpulse_log') || '[]');
 
 const topicBase = () => 'dustbin/' + cfg.deviceId;
@@ -316,7 +317,15 @@ function connect(){
   client.on('message', (t, payload) => {
     const msg = payload.toString();
     if (t.endsWith('/status')){ deviceOnline = (msg === 'online'); renderSummary(); }
-    else if (t.endsWith('/state')){ try { applyState(JSON.parse(msg)); } catch(e){} }
+    else if (t.endsWith('/state')){
+      // real ESP32 data takes over automatically from simulated standby
+      if (demo && msg && !demoForced){
+        stopDemo(false);
+        if (!client) connect(); else setPill('#pillBroker','Broker connected','ok');
+        toast('📡 ESP32 detected — switched to <b>live data</b>', 'ok');
+      }
+      try { applyState(JSON.parse(msg)); } catch(e){}
+    }
   });
   client.on('error',   () => setPill('#pillBroker','Broker error','bad'));
   client.on('close',   () => { if (!demo) setPill('#pillBroker','Disconnected','warn'); });
@@ -416,8 +425,15 @@ if ('Notification' in window && Notification.permission !== 'granted')
 setInterval(renderSummary, 5000);
 
 const qp = new URLSearchParams(location.search);
-if (qp.get('demo') === '1') startDemo();
-else connect();
+connect();
+if (qp.get('demo') === '1'){ demoForced = true; startDemo(); }
+else setTimeout(() => {
+  // no device online yet → show clearly-labeled simulated bins until the ESP32 connects
+  if (!demo && lastStateAt === null){
+    startDemo();
+    toast('No ESP32 online yet — showing <b>simulated bins</b>. They switch to live data automatically the moment your device connects.');
+  }
+}, 7000);
 </script>
 </body>
 </html>

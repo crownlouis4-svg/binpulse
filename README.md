@@ -30,6 +30,9 @@ ESP32 + HC-SR04 sensors ──MQTT──▶ broker.emqx.io ──MQTT-over-WebSo
 - On your phone open the link, tap **🔔 Enable notifications**, then **Add to Home Screen**.
 
 Press **▶ Demo** any time to see the app with simulated bins (great for testing/demo day).
+If no ESP32 is online when you open the app, it automatically switches to clearly-labeled
+**simulated bins** after a few seconds — and switches to **live data automatically** the moment
+your ESP32 publishes (`?demo=1` forces simulated mode and keeps it).
 Alerts fire when a bin crosses the threshold (default **80%**) and re-arm only after it drops 10%.
 
 ### 2. The ESP32
