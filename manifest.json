@@ -1,7 +1,7 @@
 {
-  "name": "BinPulse — Segregation Dustbin IoT",
-  "short_name": "BinPulse",
-  "description": "Live fill levels and full-bin alerts for your ESP32 segregation dustbin",
+  "name": "EcoPulse — Smart Waste Segregation",
+  "short_name": "EcoPulse",
+  "description": "Live waste levels and full alerts for your ESP32 smart segregation system",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

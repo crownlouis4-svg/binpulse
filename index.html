@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BinPulse — Segregation Dustbin IoT</title>
-<!-- v1.7: new animated logo (header SVG + SMIL favicon) -->
+<title>EcoPulse — Smart Waste Segregation IoT</title>
+<!-- v1.8: renamed to EcoPulse -->
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#0b1120">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="BinPulse">
+<meta name="apple-mobile-web-app-title" content="EcoPulse">
 <link rel="dns-prefetch" href="broker.emqx.io">
 <link rel="preconnect" href="broker.emqx.io" crossorigin>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
@@ -140,8 +140,8 @@
       </g>
       <circle class="led" cx="24" cy="25" r="1.6" fill="#ef4444"/>
     </svg>
-    <span>BinPulse<span class="logo-pulse" aria-hidden="true"></span>
-      <span class="sub">Segregation Dustbin · ESP32</span>
+    <span>EcoPulse<span class="logo-pulse" aria-hidden="true"></span>
+      <span class="sub">Smart Waste Segregation · ESP32</span>
     </span>
   </div>
   <span class="pill" id="pillBroker"><span class="dot"></span><span id="pillBrokerTxt">Idle</span></span>
@@ -158,7 +158,7 @@
 
 <main>
   <div class="summary">
-    <div class="stat">Bins<b id="statBins">0</b></div>
+    <div class="stat">Sensors<b id="statBins">0</b></div>
     <div class="stat">Full<b id="statFull">0</b></div>
     <div class="stat">Alert threshold<b id="statThr">80%</b></div>
     <div class="stat">Updated<b id="statUpdated">—</b></div>
@@ -172,7 +172,7 @@
 </section>
 
 <footer>
-  BinPulse · MQTT topics: <code>dustbin/&lt;device-id&gt;/state</code> · <code>/status</code> · <code>/cmd</code> ·
+  EcoPulse · MQTT topics: <code>ecopulse/&lt;device-id&gt;/state</code> · <code>/status</code> · <code>/cmd</code> ·
   Notifications arrive while this page is open (keep it in a tab, or add to Home Screen).
 </footer>
 
@@ -182,24 +182,24 @@
     <div class="guide">
       <h4>PART 1 — Connect your ESP32</h4>
       <ol>
-        <li><b>Wire the sensors.</b> One HC-SR04 ultrasonic sensor per bin, fixed at the <b>top of each bin, facing down</b>:<br>
+        <li><b>Wire the sensors.</b> One HC-SR04 ultrasonic sensor per waste section, fixed at the <b>top of each section, facing down</b>:<br>
           <table>
-            <tr><th>Bin</th><th>TRIG pin</th><th>ECHO pin</th></tr>
+            <tr><th>Waste</th><th>TRIG pin</th><th>ECHO pin</th></tr>
             <tr><td>🟢 Wet</td><td>GPIO 5</td><td>GPIO 18</td></tr>
             <tr><td>🔵 Dry</td><td>GPIO 19</td><td>GPIO 21</td></tr>
           </table>
           VCC → 5V (VIN), GND → GND. Tip: a 1kΩ/2kΩ divider on each ECHO pin protects the ESP32.</li>
         <li><b>Install the software.</b> In Arduino IDE: add the <b>esp32</b> boards (Boards Manager), then install the <b>PubSubClient</b> library (Library Manager).</li>
-        <li><b>Configure &amp; flash.</b> Open <a href="https://github.com/crownlouis4-svg/binpulse/blob/main/esp32_dustbin/esp32_dustbin.ino" target="_blank" rel="noopener">esp32_dustbin.ino</a> and edit the <b>USER CONFIG</b> block:
-          your WiFi name + password (<b>2.4 GHz network only</b> — ESP32 can't see 5 GHz) and each bin's real <b>height in cm</b>.
+        <li><b>Configure &amp; flash.</b> Open <a href="https://github.com/crownlouis4-svg/binpulse/blob/main/esp32_ecopulse/esp32_ecopulse.ino" target="_blank" rel="noopener">esp32_ecopulse.ino</a> and edit the <b>USER CONFIG</b> block:
+          your WiFi name + password (<b>2.4 GHz network only</b> — ESP32 can't see 5 GHz) and each section's real <b>height in cm</b>.
           Leave the broker and <code>DEVICE_ID</code> as they are — they already match this dashboard.</li>
         <li><b>Power it on.</b> The yellow "DEMO MODE" badge disappears and your <b>real bins appear within seconds</b> — from anywhere, since data flows over the internet, not your local network.</li>
       </ol>
       <h4>PART 2 — Turn on notifications</h4>
       <ol>
-        <li><b>Android:</b> open this site in <b>Chrome</b> → tap <b>🔔 Enable notifications</b> → <b>Allow</b> → menu ⋮ → <b>Add to Home screen</b>. Full-bin alerts then arrive like normal phone notifications (with sound), even on the lock screen while BinPulse runs in the background.</li>
-        <li><b>iPhone (iOS 16.4+):</b> open in <b>Safari</b> → Share → <b>Add to Home Screen</b> → open BinPulse <b>from the new icon</b> → <b>Enable notifications</b> → Allow.</li>
-        <li><b>Test it now:</b> ⚙ Settings → <b>🔔 Test notification</b>. Alerts fire the moment a bin crosses the threshold (default 80%) and re-arm only after it drops 10%.</li>
+        <li><b>Android:</b> open this site in <b>Chrome</b> → tap <b>🔔 Enable notifications</b> → <b>Allow</b> → menu ⋮ → <b>Add to Home screen</b>. Full alerts then arrive like normal phone notifications (with sound), even on the lock screen while EcoPulse runs in the background.</li>
+        <li><b>iPhone (iOS 16.4+):</b> open in <b>Safari</b> → Share → <b>Add to Home Screen</b> → open EcoPulse <b>from the new icon</b> → <b>Enable notifications</b> → Allow.</li>
+        <li><b>Test it now:</b> ⚙ Settings → <b>🔔 Test notification</b>. Alerts fire the moment a section crosses the threshold (default 80%) and re-arm only after it drops 10%.</li>
       </ol>
       <p class="note">Full docs, wiring and hosting guide: <a href="https://github.com/crownlouis4-svg/binpulse#readme" target="_blank" rel="noopener">GitHub README</a></p>
     </div>
@@ -215,7 +215,7 @@
     <div class="field"><label>MQTT broker (WebSocket URL)</label>
       <input type="text" id="sUrl" placeholder="wss://broker.emqx.io:8084/mqtt"></div>
     <div class="field"><label>Device ID (must match ESP32 DEVICE_ID)</label>
-      <input type="text" id="sDev" placeholder="bin01"></div>
+      <input type="text" id="sDev" placeholder="eco01"></div>
     <div class="field"><label>Alert threshold (% full)</label>
       <input type="number" id="sThr" min="10" max="100"></div>
     <div class="field"><label>Re-arm drop (%, prevents repeat alerts)</label>
@@ -233,7 +233,7 @@
 'use strict';
 const $ = s => document.querySelector(s);
 
-const DEFAULT_CFG = { url:'wss://broker.emqx.io:8084/mqtt', deviceId:'bin01', threshold:80, hysteresis:10, sound:true };
+const DEFAULT_CFG = { url:'wss://broker.emqx.io:8084/mqtt', deviceId:'eco01', threshold:80, hysteresis:10, sound:true };
 let cfg = { ...DEFAULT_CFG, ...JSON.parse(localStorage.getItem('binpulse_cfg') || '{}') };
 
 const FRIENDLY = {
@@ -252,7 +252,7 @@ let client = null, demoTimer = null, demo = false, demoTickRef = null;
 let deviceOnline = null, lastStateAt = null, demoForced = false;
 let alertLog = JSON.parse(localStorage.getItem('binpulse_log') || '[]');
 
-const topicBase = () => 'dustbin/' + cfg.deviceId;
+const topicBase = () => 'ecopulse/' + cfg.deviceId;
 
 function setPill(id, txt, cls){
   const p = $(id); p.className = 'pill' + (cls ? ' ' + cls : '');
@@ -288,11 +288,11 @@ function statusOf(pct){
 /* ---------------- alerts & notifications ---------------- */
 function raiseAlert(k, pct){
   const info = binInfo(k, Object.keys(bins).indexOf(k));
-  const body = `${info.name} bin is ${pct}% full — please empty it.`;
+  const body = `${info.name} is ${pct}% full — please empty it.`;
   if ('Notification' in window && Notification.permission === 'granted'){
-    new Notification('🗑️ Bin FULL!', { body, tag:'bin-' + k });
+    new Notification('🗑️ Time to empty!', { body, tag:'ecopulse-' + k });
   }
-  toast(`🚨 <b>${info.name}</b> bin is <b>${pct}%</b> full — empty it!`, 'alert');
+  toast(`🚨 <b>${info.name}</b> is <b>${pct}%</b> full — empty it!`, 'alert');
   beep();
   alertLog.unshift({ t:Date.now(), bin:info.name, pct });
   alertLog = alertLog.slice(0, 50);
@@ -302,10 +302,10 @@ function raiseAlert(k, pct){
 
 function renderLog(){
   const el = $('#log');
-  if (!alertLog.length){ el.innerHTML = '<div class="log-row" style="color:var(--mut)">No alerts yet. Bins look happy 🙂</div>'; return; }
+  if (!alertLog.length){ el.innerHTML = '<div class="log-row" style="color:var(--mut)">No alerts yet. All waste levels look good 🙂</div>'; return; }
   el.innerHTML = alertLog.map(a =>
     `<div class="log-row"><span class="t">${new Date(a.t).toLocaleString()}</span>
-     <span class="tag">FULL</span> ${a.bin} bin — ${a.pct}%</div>`).join('');
+     <span class="tag">FULL</span> ${a.bin} — ${a.pct}%</div>`).join('');
 }
 
 let actx;
@@ -368,7 +368,7 @@ function renderBins(){
     grid.innerHTML = `<div class="empty">
       <div style="font-size:34px;margin-bottom:10px">📡</div>
       Waiting for data from device <b>${cfg.deviceId}</b> on <code style="font-size:12px">${cfg.url}</code><br><br>
-      Press <b>▶ Demo</b> to try the app with simulated bins, or flash the ESP32 sketch and power it on.<br>
+      Press <b>▶ Demo</b> to try the app with simulated waste levels, or flash the ESP32 sketch and power it on.<br>
       Full steps: <b>📖 Guide</b> button (top right).
     </div>`;
     return;
@@ -415,7 +415,7 @@ function renderSummary(){
   $('#statThr').textContent = cfg.threshold + '%';
   $('#statUpdated').textContent = rel(lastStateAt) || '—';
   const badge = $('#fullBadge');
-  if (full > 0){ badge.classList.remove('hidden'); badge.textContent = `🚨 ${full} BIN${full > 1 ? 'S' : ''} FULL`; }
+  if (full > 0){ badge.classList.remove('hidden'); badge.textContent = `🚨 ${full} FULL`; }
   else badge.classList.add('hidden');
   setPill('#pillDevice', demo ? 'Demo device' : (deviceOnline === null ? 'No device data' : (deviceOnline ? 'Device online' : 'Device offline')),
           deviceOnline === true || demo ? 'ok' : (deviceOnline === false ? 'bad' : ''));
@@ -427,7 +427,7 @@ function connect(){
   disconnect();
   setPill('#pillBroker','Connecting…','warn');
   client = mqtt.connect(cfg.url, {
-    clientId: 'binpulse-' + Math.random().toString(16).slice(2, 8),
+    clientId: 'ecopulse-' + Math.random().toString(16).slice(2, 8),
     reconnectPeriod: 4000, connectTimeout: 8000, clean: true
   });
   client.on('connect', () => {
@@ -566,7 +566,7 @@ else setTimeout(() => {
   // no device online yet → show clearly-labeled simulated bins until the ESP32 connects
   if (!demo && lastStateAt === null){
     startDemo();
-    toast('No ESP32 online yet — showing <b>simulated bins</b>. They switch to live data automatically the moment your device connects.');
+    toast('No ESP32 online yet — showing <b>simulated waste levels</b>. They switch to live data automatically the moment your device connects.');
   }
 }, 7000);
 </script>

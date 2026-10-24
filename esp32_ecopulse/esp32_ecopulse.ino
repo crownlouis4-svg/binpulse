@@ -1,9 +1,9 @@
 /*
- * BinPulse — ESP32 firmware for a segregation dustbin
- * ---------------------------------------------------
- * Reads an ultrasonic sensor (HC-SR04) per bin, computes fill %,
- * and publishes all bins as one JSON message over MQTT.
- * Pair it with the BinPulse web dashboard (index.html).
+ * EcoPulse — ESP32 firmware for a smart waste segregation system
+ * --------------------------------------------------------------
+ * Reads an ultrasonic sensor (HC-SR04) per waste section, computes fill %,
+ * and publishes all sections as one JSON message over MQTT.
+ * Pair it with the EcoPulse web dashboard (index.html).
  *
  * Board:  ESP32 Dev Module  (Arduino IDE → Boards Manager → "esp32")
  * Library: PubSubClient by Nick O'Leary (Library Manager → "PubSubClient")
@@ -20,7 +20,7 @@ const char* WIFI_PASS = "YourWiFiPassword";
 
 const char* MQTT_HOST = "broker.emqx.io";   // free public broker — must match dashboard
 const int   MQTT_PORT = 1883;
-const char* DEVICE_ID = "bin01";            // must match Device ID in the dashboard
+const char* DEVICE_ID = "eco01";            // must match Device ID in the dashboard
 
 // One HC-SR04 per bin, mounted at the top looking down:
 //   name (also the JSON key), TRIG pin, ECHO pin, bin height in cm.
@@ -44,7 +44,7 @@ WiFiClient net;
 PubSubClient mqtt(net);
 unsigned long lastPublish = 0;
 
-String topicFor(const char* leaf) { return String("dustbin/") + DEVICE_ID + "/" + leaf; }
+String topicFor(const char* leaf) { return String("ecopulse/") + DEVICE_ID + "/" + leaf; }
 
 float readDistanceCm(int trig, int echo) {
   digitalWrite(trig, LOW);  delayMicroseconds(4);
@@ -145,7 +145,7 @@ void setup() {
   mqtt.setCallback(onCmd);
   mqtt.setKeepAlive(30);
 
-  Serial.println("\nBinPulse ESP32 starting — " + String(NUM_BINS) + " bins");
+  Serial.println("\nEcoPulse ESP32 starting — " + String(NUM_BINS) + " sections");
 }
 
 void loop() {
