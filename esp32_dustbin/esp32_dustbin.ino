@@ -27,10 +27,9 @@ const char* DEVICE_ID = "bin01";            // must match Device ID in the dashb
 // The dashboard auto-shows a card for every name here.
 struct Bin { const char* name; int trig; int echo; float heightCm; };
 Bin bins[] = {
-  { "wet",    5, 18, 30.0 },
-  { "dry",   19, 21, 30.0 },
-  { "metal", 22, 23, 30.0 },
-  // add more bins here, e.g. { "glass", 32, 33, 30.0 },
+  { "wet",  5, 18, 30.0 },
+  { "dry", 19, 21, 30.0 },
+  // add more bins here, e.g. { "metal", 22, 23, 30.0 },
 };
 const int NUM_BINS = sizeof(bins) / sizeof(bins[0]);
 

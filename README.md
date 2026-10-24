@@ -42,11 +42,10 @@ Alerts fire when a bin crosses the threshold (default **80%**) and re-arm only a
    your WiFi name/password and — if you changed it — broker + `DEVICE_ID`.
 3. Wire one HC-SR04 per bin (sensor at the **top, looking down**):
 
-   | Bin | TRIG | ECHO | VCC | GND |
-   |---|---|---|---|---|
-   | Wet | GPIO 5 | GPIO 18 | 5V (VIN) | GND |
-   | Dry | GPIO 19 | GPIO 21 | 5V | GND |
-   | Metal | GPIO 22 | GPIO 23 | 5V | GND |
+| Bin | TRIG | ECHO | VCC | GND |
+|---|---|---|---|---|
+| Wet | GPIO 5 | GPIO 18 | 5V (VIN) | GND |
+| Dry | GPIO 19 | GPIO 21 | 5V | GND |
 
    > Tip: HC-SR04 ECHO outputs 5V — a 1kΩ/2kΩ voltage divider on each ECHO pin
    > keeps the ESP32 GPIO safe (many boards work without it, but be safe).
@@ -62,7 +61,7 @@ and Device ID `bin01` are already the defaults. Cards appear as soon as the ESP3
 
 | Topic | Direction | Payload |
 |---|---|---|
-| `dustbin/<id>/state` | ESP32 → dashboard (retained) | `{"wet":78,"dry":45,"metal":12}` (fill %, `-1` = sensor error) |
+| `dustbin/<id>/state` | ESP32 → dashboard (retained) | `{"wet":78,"dry":45}` (fill %, `-1` = sensor error) |
 | `dustbin/<id>/status` | ESP32 → dashboard (retained, LWT) | `online` / `offline` |
 | `dustbin/<id>/cmd` | dashboard → ESP32 | `ping` → immediate re-publish |
 

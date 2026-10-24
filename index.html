@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BinPulse — Segregation Dustbin IoT</title>
-<!-- v1.4: in-app setup guide (ESP32 + notifications) + click-through toasts -->
+<!-- v1.5: two bins (wet + dry) -->
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#0b1120">
@@ -148,7 +148,6 @@
             <tr><th>Bin</th><th>TRIG pin</th><th>ECHO pin</th></tr>
             <tr><td>🟢 Wet</td><td>GPIO 5</td><td>GPIO 18</td></tr>
             <tr><td>🔵 Dry</td><td>GPIO 19</td><td>GPIO 21</td></tr>
-            <tr><td>🟡 Metal</td><td>GPIO 22</td><td>GPIO 23</td></tr>
           </table>
           VCC → 5V (VIN), GND → GND. Tip: a 1kΩ/2kΩ divider on each ECHO pin protects the ESP32.</li>
         <li><b>Install the software.</b> In Arduino IDE: add the <b>esp32</b> boards (Boards Manager), then install the <b>PubSubClient</b> library (Library Manager).</li>
@@ -392,7 +391,7 @@ function startDemo(){
   $('#btnDemo').textContent = '■ Stop demo';
   deviceOnline = true;
   const lv = () => 5 + Math.random() * 25;
-  const sim = { wet: lv(), dry: lv(), metal: lv() };
+  const sim = { wet: lv(), dry: lv() };
   const tick = () => {
     for (const k of Object.keys(sim)){
       sim[k] += 1 + Math.random() * 3.5;
