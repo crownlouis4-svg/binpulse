@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BinPulse — Segregation Dustbin IoT</title>
-<!-- v1.2: PWA install support for phone notifications -->
+<!-- v1.3: in-app setup guide (ESP32 + notifications) -->
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#0b1120">
@@ -85,6 +85,15 @@
   .field input:focus{outline:none;border-color:var(--acc)}
   .check{display:flex;align-items:center;gap:8px;font-size:14px}
   .modal .row{display:flex;gap:10px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap}
+  .modal.wide{max-width:620px;max-height:86vh;overflow-y:auto}
+  .guide h4{margin:16px 0 8px;color:var(--acc);font-size:13px;letter-spacing:.6px}
+  .guide ol{margin-left:18px;display:grid;gap:9px;font-size:13.5px;line-height:1.6;color:var(--txt)}
+  .guide table{margin:8px 0;border-collapse:collapse;font-size:12.5px}
+  .guide th,.guide td{border:1px solid var(--line);padding:4px 12px;text-align:left}
+  .guide th{color:var(--mut);font-weight:600}
+  .guide a{color:var(--acc)}
+  .guide code{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:1px 6px;font-size:12px}
+  .guide .note{font-size:12px;color:var(--mut);margin-top:14px}
   .hidden{display:none!important}
   footer{max-width:1100px;margin:0 auto;padding:0 18px 30px;color:var(--mut);font-size:12px;text-align:center}
   @media (max-width:520px){ header{padding:10px 12px} .logo{font-size:17px} main{padding:16px 12px 40px} }
@@ -104,6 +113,7 @@
   <button class="btn hidden" id="btnNotify">🔔 Enable notifications</button>
   <button class="btn" id="btnDemo">▶ Demo</button>
   <button class="btn" id="btnPing">↻ Ping device</button>
+  <button class="btn" id="btnGuide">📖 Guide</button>
   <button class="btn" id="btnSettings">⚙ Settings</button>
 </header>
 
@@ -126,6 +136,38 @@
   BinPulse · MQTT topics: <code>dustbin/&lt;device-id&gt;/state</code> · <code>/status</code> · <code>/cmd</code> ·
   Notifications arrive while this page is open (keep it in a tab, or add to Home Screen).
 </footer>
+
+<div class="modal-bg" id="helpModal">
+  <div class="modal wide">
+    <h3>📖 Setup guide</h3>
+    <div class="guide">
+      <h4>PART 1 — Connect your ESP32</h4>
+      <ol>
+        <li><b>Wire the sensors.</b> One HC-SR04 ultrasonic sensor per bin, fixed at the <b>top of each bin, facing down</b>:<br>
+          <table>
+            <tr><th>Bin</th><th>TRIG pin</th><th>ECHO pin</th></tr>
+            <tr><td>🟢 Wet</td><td>GPIO 5</td><td>GPIO 18</td></tr>
+            <tr><td>🔵 Dry</td><td>GPIO 19</td><td>GPIO 21</td></tr>
+            <tr><td>🟡 Metal</td><td>GPIO 22</td><td>GPIO 23</td></tr>
+          </table>
+          VCC → 5V (VIN), GND → GND. Tip: a 1kΩ/2kΩ divider on each ECHO pin protects the ESP32.</li>
+        <li><b>Install the software.</b> In Arduino IDE: add the <b>esp32</b> boards (Boards Manager), then install the <b>PubSubClient</b> library (Library Manager).</li>
+        <li><b>Configure &amp; flash.</b> Open <a href="https://github.com/crownlouis4-svg/binpulse/blob/main/esp32_dustbin/esp32_dustbin.ino" target="_blank" rel="noopener">esp32_dustbin.ino</a> and edit the <b>USER CONFIG</b> block:
+          your WiFi name + password (<b>2.4 GHz network only</b> — ESP32 can't see 5 GHz) and each bin's real <b>height in cm</b>.
+          Leave the broker and <code>DEVICE_ID</code> as they are — they already match this dashboard.</li>
+        <li><b>Power it on.</b> The yellow "DEMO MODE" badge disappears and your <b>real bins appear within seconds</b> — from anywhere, since data flows over the internet, not your local network.</li>
+      </ol>
+      <h4>PART 2 — Turn on notifications</h4>
+      <ol>
+        <li><b>Android:</b> open this site in <b>Chrome</b> → tap <b>🔔 Enable notifications</b> → <b>Allow</b> → menu ⋮ → <b>Add to Home screen</b>. Full-bin alerts then arrive like normal phone notifications (with sound), even on the lock screen while BinPulse runs in the background.</li>
+        <li><b>iPhone (iOS 16.4+):</b> open in <b>Safari</b> → Share → <b>Add to Home Screen</b> → open BinPulse <b>from the new icon</b> → <b>Enable notifications</b> → Allow.</li>
+        <li><b>Test it now:</b> ⚙ Settings → <b>🔔 Test notification</b>. Alerts fire the moment a bin crosses the threshold (default 80%) and re-arm only after it drops 10%.</li>
+      </ol>
+      <p class="note">Full docs, wiring and hosting guide: <a href="https://github.com/crownlouis4-svg/binpulse#readme" target="_blank" rel="noopener">GitHub README</a></p>
+    </div>
+    <div class="row"><button class="btn primary" id="btnHelpClose">Got it</button></div>
+  </div>
+</div>
 
 <div id="toasts"></div>
 
@@ -266,7 +308,8 @@ function renderBins(){
     $('#grid').innerHTML = `<div class="empty">
       <div style="font-size:34px;margin-bottom:10px">📡</div>
       Waiting for data from device <b>${cfg.deviceId}</b> on <code style="font-size:12px">${cfg.url}</code><br><br>
-      Press <b>▶ Demo</b> to try the app with simulated bins, or flash the ESP32 sketch and power it on.
+      Press <b>▶ Demo</b> to try the app with simulated bins, or flash the ESP32 sketch and power it on.<br>
+      Full steps: <b>📖 Guide</b> button (top right).
     </div>`;
     return;
   }
@@ -390,6 +433,10 @@ $('#btnPing').onclick = () => {
 $('#btnSettings').onclick = () => { applyCfgToInputs(); $('#settingsModal').classList.add('open'); };
 $('#btnCancel').onclick = () => $('#settingsModal').classList.remove('open');
 $('#settingsModal').onclick = e => { if (e.target.id === 'settingsModal') $('#settingsModal').classList.remove('open'); };
+
+$('#btnGuide').onclick = () => $('#helpModal').classList.add('open');
+$('#btnHelpClose').onclick = () => $('#helpModal').classList.remove('open');
+$('#helpModal').onclick = e => { if (e.target.id === 'helpModal') $('#helpModal').classList.remove('open'); };
 
 $('#btnSave').onclick = () => {
   cfg.url = $('#sUrl').value.trim() || DEFAULT_CFG.url;
