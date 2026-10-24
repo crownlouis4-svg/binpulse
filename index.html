@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BinPulse — Segregation Dustbin IoT</title>
-<!-- v1.6: smooth animated gauges, flicker-free updates, faster connect, battery-friendly demo -->
+<!-- v1.7: new animated logo (header SVG + SMIL favicon) -->
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#0b1120">
@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-title" content="BinPulse">
 <link rel="dns-prefetch" href="broker.emqx.io">
 <link rel="preconnect" href="broker.emqx.io" crossorigin>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗑️</text></svg>">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <script src="https://unpkg.com/mqtt@5/dist/mqtt.min.js"></script>
 <script>if (typeof mqtt === 'undefined') document.write('<script src="https://cdn.jsdelivr.net/npm/mqtt@5/dist/mqtt.min.js"><\/script>');</script>
 <style>
@@ -31,6 +31,18 @@
          padding:14px 20px;background:rgba(11,17,32,.82);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
   .logo{font-size:20px;font-weight:700;letter-spacing:.3px;display:flex;align-items:center;gap:8px}
   .logo .sub{font-size:11px;color:var(--mut);font-weight:500;display:block}
+  .logo-svg{width:30px;height:30px;flex:none;display:block}
+  .logo-svg .fillg{animation:fillrise 3.4s ease-in-out infinite alternate}
+  @keyframes fillrise{from{transform:translateY(0)}to{transform:translateY(-11px)}}
+  .logo-svg .sig{animation:sigblink 1.7s infinite}
+  .logo-svg .sig2{animation-delay:.4s}
+  @keyframes sigblink{0%,100%{opacity:.15}35%{opacity:1}}
+  .logo-svg .led{animation:ledblink 2.2s infinite}
+  @keyframes ledblink{0%,40%{opacity:1}50%,100%{opacity:.2}}
+  .logo-pulse{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--acc);
+              margin-left:6px;vertical-align:2px;animation:ping 1.8s infinite}
+  @keyframes ping{0%{box-shadow:0 0 0 0 rgba(56,189,248,.55)}70%,100%{box-shadow:0 0 0 8px rgba(56,189,248,0)}}
+  @media (prefers-reduced-motion:reduce){.logo-svg .fillg,.logo-svg .sig,.logo-svg .led,.logo-pulse{animation:none}}
   .pill{font-size:12px;padding:5px 12px;border-radius:999px;border:1px solid var(--line);color:var(--mut);
         display:inline-flex;align-items:center;gap:6px;background:var(--card)}
   .pill.ok{color:var(--ok);border-color:#14532d} .pill.warn{color:var(--warn);border-color:#78350f}
@@ -110,8 +122,27 @@
 <body>
 
 <header>
-  <div class="logo">🗑️ BinPulse
-    <span class="sub">Segregation Dustbin · ESP32</span>
+  <div class="logo">
+    <svg class="logo-svg" viewBox="0 0 48 48" aria-hidden="true">
+      <g fill="none" stroke="#38bdf8" stroke-width="2.4" stroke-linecap="round">
+        <path class="sig" d="M18 11 A6 6 0 0 1 30 11"/>
+        <path class="sig sig2" d="M14 11 A10 10 0 0 1 34 11"/>
+      </g>
+      <circle cx="24" cy="9" r="2" fill="#38bdf8"/>
+      <path d="M14 18 H34" stroke="#e2e8f0" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+      <path d="M15.5 21 L16.8 38 Q17 41 20 41 H28 Q31 41 31.2 38 L32.5 21" stroke="#e2e8f0" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+      <clipPath id="binclip"><path d="M15.5 21 L16.8 38 Q17 41 20 41 H28 Q31 41 31.2 38 L32.5 21 Z"/></clipPath>
+      <g clip-path="url(#binclip)">
+        <g class="fillg">
+          <rect x="13" y="30" width="22" height="13" fill="#38bdf8" opacity=".8"/>
+          <ellipse cx="24" cy="30" rx="11" ry="1.8" fill="#7dd3fc" opacity=".9"/>
+        </g>
+      </g>
+      <circle class="led" cx="24" cy="25" r="1.6" fill="#ef4444"/>
+    </svg>
+    <span>BinPulse<span class="logo-pulse" aria-hidden="true"></span>
+      <span class="sub">Segregation Dustbin · ESP32</span>
+    </span>
   </div>
   <span class="pill" id="pillBroker"><span class="dot"></span><span id="pillBrokerTxt">Idle</span></span>
   <span class="pill" id="pillDevice"><span class="dot"></span><span id="pillDeviceTxt">No device data</span></span>
